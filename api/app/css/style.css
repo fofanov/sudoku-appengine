@@ -1,0 +1,42 @@
+input.cell {
+    height: 30px;
+    width: 30px;
+    border: 1px solid black;
+    font-size: 20px;
+    text-align: center;
+}
+.cell {
+    -webkit-transition:all linear 0.5s;
+            transition:all linear 0.5s;
+            background: transparent;
+}
+.cell.ng-invalid {
+    color:white;
+    background: red;
+}
+.cell.updated {
+    color:white;
+    background: green;
+}
+.setting {
+    -webkit-transition:all linear 0.5s;
+            transition:all linear 0.5s;
+            background: transparent;
+}
+.setting.ng-invalid {
+    color:white;
+    background: red;
+}
+
+.table-centered {
+    margin: 0 auto;
+    float: none;
+}
+
+#controls {
+    padding-top: 15px;
+}
+
+#start-with {
+    height: 34px;
+}
