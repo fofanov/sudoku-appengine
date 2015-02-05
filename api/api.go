@@ -14,6 +14,7 @@ func init() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", api.loginHandler).Methods("GET")
+	r.HandleFunc("/logout", api.logoutHandler).Methods("GET")
 	r.HandleFunc("/grid", withAuthRequiredHandler(api.getGridHandler)).Methods("GET")
 	r.HandleFunc("/grid", withAuthRequiredHandler(withValidGridHandler(api.postGridHandler))).Methods("POST")
 	r.HandleFunc("/randomgrid", api.randomGridHandler).Methods("GET")

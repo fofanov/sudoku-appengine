@@ -118,13 +118,27 @@ func (s *SudokuAeApi) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 	u := user.Current(c)
-	url, _ := user.LoginURL(c, "/")
 	if u == nil {
+		url, _ := user.LoginURL(c, "/")
 		http.Redirect(w, r, url, http.StatusFound)
 		return
 	}
 
 	http.Redirect(w, r, "/app/index.html", http.StatusFound)
+}
+
+// Logout users. Redirect to the login page.
+func (s *SudokuAeApi) logoutHandler(w http.ResponseWriter, r *http.Request) {
+
+	c := appengine.NewContext(r)
+	u := user.Current(c)
+	if u != nil {
+		url, _ := user.LogoutURL(c, "/")
+		http.Redirect(w, r, url, http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // Retrieve the previously stored grid state for a user.

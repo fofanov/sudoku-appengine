@@ -124,7 +124,7 @@ func (a *ApiSuite) TestLoginHandlerLoggedIn(c *ch.C) {
 	c.Assert(w.Header().Get("Location"), ch.Equals, "/app/index.html")
 }
 
-// Verify users are redirected to the login page when they logged out.
+// Verify users are redirected to the appengine login page when they are logged out.
 func (a *ApiSuite) TestLoginHandlerLoggedOut(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -138,6 +138,41 @@ func (a *ApiSuite) TestLoginHandlerLoggedOut(c *ch.C) {
 	c.Assert(w.Code, ch.Equals, http.StatusFound)
 	// Redirect user to log in page
 	c.Assert(w.Header().Get("Location"), ch.Equals, "/_ah/login?continue=/")
+}
+
+// Verify users are redirected to the appengine logout when they are already logged in.
+func (a *ApiSuite) TestLogoutHandlerLoggedIn(c *ch.C) {
+	r, err := a.inst.NewRequest("GET", "/", nil)
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	aetest.Login(&user.User{ID: "testuser",
+		Email: "testuser@company.com"}, r)
+
+	w := httptest.NewRecorder()
+
+	NewSudokuAeApi(nil).loginHandler(w, r)
+
+	c.Assert(w.Code, ch.Equals, http.StatusFound)
+	// Redirect logged in user to app
+	c.Assert(w.Header().Get("Location"), ch.Equals, "/_ah/login?continue=")
+}
+
+// Verify users are redirected to login when they are logged out.
+func (a *ApiSuite) TestLogoutHandlerLoggedOut(c *ch.C) {
+	r, err := a.inst.NewRequest("GET", "/", nil)
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+
+	NewSudokuAeApi(nil).loginHandler(w, r)
+
+	c.Assert(w.Code, ch.Equals, http.StatusFound)
+	// Redirect user to log in page
+	c.Assert(w.Header().Get("Location"), ch.Equals, "/")
 }
 
 // Verify that we are able to return a saved grid in the response (if one
