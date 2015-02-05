@@ -5,7 +5,7 @@ var GRID_SIZE = SUBGRID_SIZE * SUBGRID_SIZE;
 var DEFAULT_INPUTS = 32;
 var UPDATE_TIME_MILLIS = 750;
 
-sudokuApp.controller('SudokuCtrl', function ($http, $scope, $timeout) {
+sudokuApp.controller('SudokuCtrl', ['$http','$scope','$timeout','$window', function ($http, $scope, $timeout, $window) {
 
     var updateGrid = function(newGrid) {
         var i,j;
@@ -29,7 +29,6 @@ sudokuApp.controller('SudokuCtrl', function ($http, $scope, $timeout) {
         for (n = 0; n < GRID_SIZE; n++) {
             $scope.grid[n] = new Array(GRID_SIZE);
         }
-        console.log($scope.grid);
 
         // Retrieve saved state if it exists.
         $http.get('/grid').
@@ -40,8 +39,12 @@ sudokuApp.controller('SudokuCtrl', function ($http, $scope, $timeout) {
                      $scope.resetGrid();
                 }
         }).
-        error(function(data) {
+        error(function(data, status) {
             console.warn(data);
+            if (status === 401) {
+                // Redirect the user to login
+                $window.location = '/';
+            }
         });
 
         // Set the default inputs
@@ -64,8 +67,12 @@ sudokuApp.controller('SudokuCtrl', function ($http, $scope, $timeout) {
                 $scope.solutions = data.solutions;
                    
         }).
-            error(function(data) {
+            error(function(data, status) {
                 console.warn(data);
+                if (status === 401) {
+                    // Redirect the user to login
+                    $window.location = '/';
+                }
             });
         
     };
@@ -230,18 +237,21 @@ sudokuApp.controller('SudokuCtrl', function ($http, $scope, $timeout) {
     };
 
     $scope.solutionsText = function(sols) {
+        if (sols === null || sols === undefined) {
+            return "";
+        }
         if (sols > 10000) {
             return "Solutions remaining: Loads";
         } 
         if (sols > 0) {
             if (sols === 1 && fullGrid() ) {
-                return "WINNING SOLUTION!"
+                return "WINNING SOLUTION!";
             }
             return "Solutions remaining: " + sols;
         }
-        return "No possible solutions!"
+        return "No possible solutions!";
     };
 
     // Setup the grid
     initialise();
-});
+}]);
