@@ -2,6 +2,8 @@
 
 A simple Sudoku app written in Go & Javascript. Designed to run on [Google App Engine](https://cloud.google.com/appengine/docs).
 
+[Demo](http://sudoku-simple.appspot.com)
+
 ## Design
 
 The Sudoku game is played via the Javascript client. This is augmented with
