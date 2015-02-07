@@ -118,7 +118,7 @@ sudokuApp.controller('SudokuCtrl', ['$http','$scope','$timeout','$window', funct
                     colCheck[j][nIndex] = true;
 
                     // Check that we have yet to see this value in this subgrid.
-                    subGridIndex = SUBGRID_SIZE * Math.floor(i/SUBGRID_SIZE) + Math.floor(j/SUBGRID_SIZE); 
+                    subGridIndex = $scope.subgridIndex(i,j);
                     seen = subgridCheck[subGridIndex][nIndex];
                     if (seen) {
                         $scope.invalidCells[i * GRID_SIZE +j] = true;
@@ -236,6 +236,10 @@ sudokuApp.controller('SudokuCtrl', ['$http','$scope','$timeout','$window', funct
         }
     };
 
+    $scope.subgridIndex = function(i,j) {
+        return SUBGRID_SIZE * Math.floor(i/SUBGRID_SIZE) + Math.floor(j/SUBGRID_SIZE);
+    };
+
     $scope.solutionsText = function(sols) {
         if (sols === null || sols === undefined) {
             return "";
@@ -254,4 +258,8 @@ sudokuApp.controller('SudokuCtrl', ['$http','$scope','$timeout','$window', funct
 
     // Setup the grid
     initialise();
-}]);
+}]).directive('game', function() {
+    return {
+        templateUrl: '/app/partials/grid.html'
+    };
+});

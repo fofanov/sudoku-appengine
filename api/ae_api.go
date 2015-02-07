@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -124,7 +125,13 @@ func (s *SudokuAeApi) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/app/index.html", http.StatusFound)
+	t, err := template.ParseFiles("index.html")
+	if err != nil {
+		c.Errorf("Unable to find template: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, u)
 }
 
 // Logout users. Redirect to the login page.
