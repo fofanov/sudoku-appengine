@@ -1,4 +1,4 @@
-application: simplesudoku
+application: sudoku-simple
 version: 1
 runtime: go
 api_version: go1
