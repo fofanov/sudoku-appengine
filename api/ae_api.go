@@ -67,11 +67,8 @@ func readStartingInputs(r *http.Request) (int, error) {
 	return strconv.Atoi(startWith)
 }
 
-// Used for wrapping handler functions.
-type httpHandlerFn func(w http.ResponseWriter, r *http.Request)
-
 // Wrapper for handlers that require a user to be authenticated.
-func withAuthRequiredHandler(fn httpHandlerFn) httpHandlerFn {
+func withAuthRequiredHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
 		u := user.Current(c)
@@ -88,7 +85,7 @@ func withAuthRequiredHandler(fn httpHandlerFn) httpHandlerFn {
 }
 
 // Wrapper for handlers which expect a valid grid state to be sent in requst.
-func withValidGridHandler(fn httpHandlerFn) httpHandlerFn {
+func withValidGridHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		state, err := readState(r)
