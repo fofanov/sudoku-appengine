@@ -111,7 +111,7 @@ func withValidGridHandler(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Redirect logged out users to login. Redirect logged in users to app.
+// Redirect logged out users to login. Send app to logged in users.
 func (s *SudokuAeApi) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)

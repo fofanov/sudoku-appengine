@@ -21,3 +21,6 @@ Start the server
 
 Point your browser to `http://localhost:8080` 
 
+## Testing
+
+`goapp test ./...`
