@@ -9,7 +9,7 @@ import (
 
 func init() {
 
-	store := persistence.NewJsonDatastoreGrid()
+	store := persistence.NewBinaryDatastoreGrid()
 	api := NewSudokuAeApi(store)
 
 	r := mux.NewRouter()

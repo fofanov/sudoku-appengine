@@ -1,7 +1,8 @@
 package persistence
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"log"
 
@@ -19,29 +20,29 @@ type DatastoreGrid interface {
 	LoadGrid(c appengine.Context) (sudoku.Grid, error)
 }
 
-//TODO Store data in binary format
-type jsonDatastoreGrid struct{}
+type binaryDatastoreGrid struct{}
 
-func NewJsonDatastoreGrid() DatastoreGrid {
-	return &jsonDatastoreGrid{}
+func NewBinaryDatastoreGrid() DatastoreGrid {
+	return &binaryDatastoreGrid{}
 }
 
-// Save a sudoku grid as JSON in the AE datastore.
-func (d *jsonDatastoreGrid) SaveGrid(c appengine.Context, g sudoku.Grid) error {
+// Save a sudoku grid as binary stream in the AE datastore.
+func (d *binaryDatastoreGrid) SaveGrid(c appengine.Context, g sudoku.Grid) error {
 
 	u := user.Current(c)
 	if u == nil {
 		return errors.New("No user")
 	}
 
-	bs, err := json.Marshal(&g)
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(&g)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
 	key := datastore.NewKey(c, SUDOKU_GRID_ENTITY, u.ID, 0, nil)
-	if _, err = datastore.Put(c, key, &struct{ BS []byte }{BS: bs}); err != nil {
+	if _, err = datastore.Put(c, key, &struct{ BS []byte }{BS: buf.Bytes()}); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -49,8 +50,8 @@ func (d *jsonDatastoreGrid) SaveGrid(c appengine.Context, g sudoku.Grid) error {
 	return nil
 }
 
-// Load a sudoku grid from JSON in the AE datastore.
-func (d *jsonDatastoreGrid) LoadGrid(c appengine.Context) (sudoku.Grid, error) {
+// Load a sudoku grid from binary stream in the AE datastore.
+func (d *binaryDatastoreGrid) LoadGrid(c appengine.Context) (sudoku.Grid, error) {
 
 	u := user.Current(c)
 	if u == nil {
@@ -68,7 +69,7 @@ func (d *jsonDatastoreGrid) LoadGrid(c appengine.Context) (sudoku.Grid, error) {
 	}
 
 	grid := sudoku.EmptyGrid()
-	if err := json.Unmarshal(bs.BS, &grid); err != nil {
+	if err := gob.NewDecoder(bytes.NewReader(bs.BS)).Decode(&grid); err != nil {
 		log.Println(err)
 		return nil, err
 	}

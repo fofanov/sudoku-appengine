@@ -37,7 +37,7 @@ func (p *PersistenceSuite) TestPersistenceRoundTrip(c *ch.C) {
 	p.con.Login(&user.User{ID: "testuser",
 		Email: "testuser@company.com"})
 
-	store := NewJsonDatastoreGrid()
+	store := NewBinaryDatastoreGrid()
 	// Store a grid (we don't care if it is valid)
 	grid := sudoku.GridPerm()
 
@@ -55,7 +55,7 @@ func (p *PersistenceSuite) TestSaveNilGrid(c *ch.C) {
 	p.con.Login(&user.User{ID: "testuser",
 		Email: "testuser@company.com"})
 
-	store := NewJsonDatastoreGrid()
+	store := NewBinaryDatastoreGrid()
 
 	err := store.SaveGrid(p.con, nil)
 	c.Assert(err, ch.IsNil)
@@ -66,7 +66,7 @@ func (p *PersistenceSuite) TestFailOnMissingUser(c *ch.C) {
 	p.con.Login(&user.User{})
 
 	grid := sudoku.EmptyGrid()
-	store := NewJsonDatastoreGrid()
+	store := NewBinaryDatastoreGrid()
 
 	err := store.SaveGrid(p.con, grid)
 	c.Assert(err, ch.NotNil) // Expected error due to missing user
@@ -81,7 +81,7 @@ func (p *PersistenceSuite) TestNoGridToLoad(c *ch.C) {
 	p.con.Login(&user.User{ID: "testuser",
 		Email: "testuser@company.com"})
 
-	store := NewJsonDatastoreGrid()
+	store := NewBinaryDatastoreGrid()
 
 	rtGrid, err := store.LoadGrid(p.con)
 
