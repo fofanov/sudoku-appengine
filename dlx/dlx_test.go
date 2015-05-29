@@ -156,7 +156,7 @@ func (d *DlxSuite) TestMinimalSelect(c *ch.C) {
 	}
 
 	// Set some random sizes
-	var expected Column = nil
+	var expected Column
 	min := 100
 	for _, o := range obsHead {
 		v := rand.Intn(100)

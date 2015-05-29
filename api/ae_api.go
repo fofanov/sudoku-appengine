@@ -16,11 +16,11 @@ import (
 	"appengine/user"
 )
 
-type State struct {
-	Grid sudoku.Grid `json:"grid"` // State of the game
+type state struct {
+	Grid sudoku.Grid `json:"grid"` // state of the game
 }
 
-type Solutions struct {
+type solutions struct {
 	Count uint32      `json:"solutions"`      // Number of possible solutions
 	Grid  sudoku.Grid `json:"grid,omitempty"` // A sample grid solution
 }
@@ -30,7 +30,7 @@ type contextKey int
 // Used for storing the grid in the request context.
 const gridKey contextKey = 0
 
-type SudokuAeApi struct {
+type sudokuAppEngineAPI struct {
 	store persistence.DatastoreGrid
 }
 
@@ -47,9 +47,9 @@ func writeResult(w http.ResponseWriter, r interface{}) error {
 
 // Read the current game state from the request body.
 // Expected to be JSON encoded.
-func readState(r *http.Request) (*State, error) {
+func readstate(r *http.Request) (*state, error) {
 
-	state := &State{}
+	state := &state{}
 	if err := json.NewDecoder(r.Body).Decode(state); err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func withAuthRequiredHandler(fn http.HandlerFunc) http.HandlerFunc {
 func withValidGridHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		state, err := readState(r)
+		state, err := readstate(r)
 		if err != nil {
 			appengine.NewContext(r).Errorf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -112,7 +112,7 @@ func withValidGridHandler(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 // Redirect logged out users to login. Send app to logged in users.
-func (s *SudokuAeApi) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 	u := user.Current(c)
@@ -132,7 +132,7 @@ func (s *SudokuAeApi) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout users. Redirect to the login page.
-func (s *SudokuAeApi) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 	u := user.Current(c)
@@ -146,7 +146,7 @@ func (s *SudokuAeApi) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Retrieve the previously stored grid state for a user.
-func (s *SudokuAeApi) getGridHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) getGridHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 
@@ -162,14 +162,14 @@ func (s *SudokuAeApi) getGridHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := writeResult(w, &State{Grid: grid}); err != nil {
+	if err := writeResult(w, &state{Grid: grid}); err != nil {
 		c.Errorf(err.Error())
 	}
 
 }
 
 // Store the grid state for a user.
-func (s *SudokuAeApi) postGridHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) postGridHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 	grid, ok := context.Get(r, gridKey).(sudoku.Grid)
@@ -181,14 +181,14 @@ func (s *SudokuAeApi) postGridHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Look for solutions to this grid whilst we save it.
-	solutions := make(chan uint32)
+	sols := make(chan uint32)
 	go func() {
 		sudokuState := sudoku.NewSudokuState(grid)
 
 		// Now search for solutions
-		sols, _ := sudokuState.Search()
+		ss, _ := sudokuState.Search()
 
-		solutions <- sols
+		sols <- ss
 	}()
 
 	if err := s.store.SaveGrid(c, grid); err != nil {
@@ -200,14 +200,14 @@ func (s *SudokuAeApi) postGridHandler(w http.ResponseWriter, r *http.Request) {
 	// This heavily relies on a solution search that always terminates (and for the sake
 	// of responsiveness, terminates quickly).
 	// If not we may start leaking resources.
-	if err := writeResult(w, &Solutions{Count: <-solutions}); err != nil {
+	if err := writeResult(w, &solutions{Count: <-sols}); err != nil {
 		c.Errorf(err.Error())
 	}
 }
 
 // Give the client the number of solutions (and possible solution grid) to their
 // current grid state.
-func (s *SudokuAeApi) solutionsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) solutionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	grid, ok := context.Get(r, gridKey).(sudoku.Grid)
 	if !ok {
@@ -220,11 +220,11 @@ func (s *SudokuAeApi) solutionsHandler(w http.ResponseWriter, r *http.Request) {
 	sudokuState := sudoku.NewSudokuState(grid)
 
 	// Now search for solutions
-	solutions, remainderGrid := sudokuState.Search()
+	sols, remainderGrid := sudokuState.Search()
 	sudoku.MergeGrids(grid, remainderGrid.(sudoku.Grid))
 
-	if err := writeResult(w, &Solutions{
-		Count: solutions,
+	if err := writeResult(w, &solutions{
+		Count: sols,
 		Grid:  grid,
 	}); err != nil {
 		appengine.NewContext(r).Errorf(err.Error())
@@ -235,7 +235,7 @@ func (s *SudokuAeApi) solutionsHandler(w http.ResponseWriter, r *http.Request) {
 // Give the client a hint as to what to input next, given their current grid
 // state.
 // TODO - merge with the solutions handler.
-func (s *SudokuAeApi) solutionsHintHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) solutionsHintHandler(w http.ResponseWriter, r *http.Request) {
 
 	grid, ok := context.Get(r, gridKey).(sudoku.Grid)
 	if !ok {
@@ -261,7 +261,7 @@ func (s *SudokuAeApi) solutionsHintHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // Return the client a random grid with the desired number of starting inputs.
-func (s *SudokuAeApi) randomGridHandler(w http.ResponseWriter, r *http.Request) {
+func (s *sudokuAppEngineAPI) randomGridHandler(w http.ResponseWriter, r *http.Request) {
 
 	startingInputs, err := readStartingInputs(r)
 	if err != nil {
@@ -281,14 +281,14 @@ func (s *SudokuAeApi) randomGridHandler(w http.ResponseWriter, r *http.Request) 
 
 	sudoku.GridDropUntil(randomGrid, startingInputs)
 
-	if err := writeResult(w, &State{Grid: randomGrid}); err != nil {
+	if err := writeResult(w, &state{Grid: randomGrid}); err != nil {
 		appengine.NewContext(r).Errorf(err.Error())
 	}
 }
 
-// Create an instance of the sudoku API to run on GAE.
-func NewSudokuAeApi(d persistence.DatastoreGrid) *SudokuAeApi {
-	return &SudokuAeApi{
+// newSudokuAppEngineAPI creates an instance of the sudoku API to run on GAE.
+func newSudokuAppEngineAPI(d persistence.DatastoreGrid) *sudokuAppEngineAPI {
+	return &sudokuAppEngineAPI{
 		store: d,
 	}
 }

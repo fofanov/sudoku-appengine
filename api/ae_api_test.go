@@ -22,22 +22,22 @@ import (
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { ch.TestingT(t) }
 
-type ApiSuite struct {
+type APISuite struct {
 	con  aetest.Context
 	inst aetest.Instance
 }
 
-var _ = ch.Suite(&ApiSuite{})
+var _ = ch.Suite(&APISuite{})
 
 // Set up appengine local services.
-func (a *ApiSuite) SetUpSuite(c *ch.C) {
+func (a *APISuite) SetUpSuite(c *ch.C) {
 	ins, err := aetest.NewInstance(nil)
 	c.Assert(err, ch.IsNil)
 	a.inst = ins
 }
 
 // Tear down appengine local services.
-func (a *ApiSuite) TearDownSuite(c *ch.C) {
+func (a *APISuite) TearDownSuite(c *ch.C) {
 	a.inst.Close()
 }
 
@@ -57,7 +57,7 @@ func (t *testDatastore) LoadGrid(c appengine.Context) (sudoku.Grid, error) {
 
 // Verify that handlers that require authentication are reached when user is
 // known.
-func (a *ApiSuite) TestWithAuthRequiredSuccess(c *ch.C) {
+func (a *APISuite) TestWithAuthRequiredSuccess(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/requires/login", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -83,7 +83,7 @@ func (a *ApiSuite) TestWithAuthRequiredSuccess(c *ch.C) {
 
 // Verify that handlers that require authentication are not reached when the
 // user is not known.
-func (a *ApiSuite) TestWithAuthRequiredFailure(c *ch.C) {
+func (a *APISuite) TestWithAuthRequiredFailure(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/requires/login", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -106,7 +106,7 @@ func (a *ApiSuite) TestWithAuthRequiredFailure(c *ch.C) {
 }
 
 // Verify users are redirected to the app when they are already logged in.
-func (a *ApiSuite) TestLoginHandlerLoggedIn(c *ch.C) {
+func (a *APISuite) TestLoginHandlerLoggedIn(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -117,13 +117,13 @@ func (a *ApiSuite) TestLoginHandlerLoggedIn(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).loginHandler(w, r)
+	newSudokuAppEngineAPI(nil).loginHandler(w, r)
 
 	c.Assert(w.Code, ch.Equals, http.StatusOK)
 }
 
 // Verify users are redirected to the appengine login page when they are logged out.
-func (a *ApiSuite) TestLoginHandlerLoggedOut(c *ch.C) {
+func (a *APISuite) TestLoginHandlerLoggedOut(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -131,7 +131,7 @@ func (a *ApiSuite) TestLoginHandlerLoggedOut(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).loginHandler(w, r)
+	newSudokuAppEngineAPI(nil).loginHandler(w, r)
 
 	c.Assert(w.Code, ch.Equals, http.StatusFound)
 	// Redirect user to log in page
@@ -139,7 +139,7 @@ func (a *ApiSuite) TestLoginHandlerLoggedOut(c *ch.C) {
 }
 
 // Verify users are redirected to the appengine logout when they are already logged in.
-func (a *ApiSuite) TestLogoutHandlerLoggedIn(c *ch.C) {
+func (a *APISuite) TestLogoutHandlerLoggedIn(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/logout", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -150,7 +150,7 @@ func (a *ApiSuite) TestLogoutHandlerLoggedIn(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).logoutHandler(w, r)
+	newSudokuAppEngineAPI(nil).logoutHandler(w, r)
 
 	c.Assert(w.Code, ch.Equals, http.StatusFound)
 	// Redirect logged in user to app
@@ -158,7 +158,7 @@ func (a *ApiSuite) TestLogoutHandlerLoggedIn(c *ch.C) {
 }
 
 // Verify users are redirected to login when they are logged out.
-func (a *ApiSuite) TestLogoutHandlerLoggedOut(c *ch.C) {
+func (a *APISuite) TestLogoutHandlerLoggedOut(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/logout", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -166,7 +166,7 @@ func (a *ApiSuite) TestLogoutHandlerLoggedOut(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).logoutHandler(w, r)
+	newSudokuAppEngineAPI(nil).logoutHandler(w, r)
 
 	c.Assert(w.Code, ch.Equals, http.StatusFound)
 	// Redirect user to log in page
@@ -175,7 +175,7 @@ func (a *ApiSuite) TestLogoutHandlerLoggedOut(c *ch.C) {
 
 // Verify that we are able to return a saved grid in the response (if one
 // exists).
-func (a *ApiSuite) TestGetGrid(c *ch.C) {
+func (a *APISuite) TestGetGrid(c *ch.C) {
 	r, err := a.inst.NewRequest("GET", "/grid", nil)
 	if err != nil {
 		c.Fatal(err)
@@ -187,20 +187,20 @@ func (a *ApiSuite) TestGetGrid(c *ch.C) {
 
 	w := httptest.NewRecorder()
 	testStore := &testDatastore{}
-	testAeApi := NewSudokuAeApi(testStore)
+	testAPI := newSudokuAppEngineAPI(testStore)
 
-	testAeApi.getGridHandler(w, r)
+	testAPI.getGridHandler(w, r)
 	// Expecting no grid data
 	c.Assert(w.Code, ch.Equals, http.StatusNoContent)
 
 	testStore.grid = sudoku.GridPerm()
 	w2 := httptest.NewRecorder()
 
-	testAeApi.getGridHandler(w2, r)
+	testAPI.getGridHandler(w2, r)
 	// Expecting grid data
 	c.Assert(w2.Code, ch.Equals, http.StatusOK)
 
-	var responseState State
+	var responseState state
 	// Response should be valid JSON
 	err = json.Unmarshal(w2.Body.Bytes(), &responseState)
 	c.Assert(err, ch.IsNil)
@@ -210,7 +210,7 @@ func (a *ApiSuite) TestGetGrid(c *ch.C) {
 }
 
 // Verify handlers that require a grid reject requests that are missing a grid.
-func (a *ApiSuite) TestPostGridMissingGrid(c *ch.C) {
+func (a *APISuite) TestPostGridMissingGrid(c *ch.C) {
 	// Send request with a missing grid
 	var missingGrid = &struct{ MissingGrid string }{MissingGrid: "Not a grid"}
 
@@ -240,9 +240,9 @@ func (a *ApiSuite) TestPostGridMissingGrid(c *ch.C) {
 }
 
 // Verify handlers that require a grid reject requests that send a bad grid.
-func (a *ApiSuite) TestPostGridBadGrid(c *ch.C) {
+func (a *APISuite) TestPostGridBadGrid(c *ch.C) {
 	// Send request with bad grid (not the right length)
-	var requestState State
+	var requestState state
 	requestState.Grid = [][]int8{{1, 2, 3, 4}, {1, 3, 2}, {2, 1, 3}}
 
 	bs, err := json.Marshal(&requestState)
@@ -271,9 +271,9 @@ func (a *ApiSuite) TestPostGridBadGrid(c *ch.C) {
 }
 
 // Verify handlers that require a grid reject requests that send an invalid grid.
-func (a *ApiSuite) TestWithInvalidGrid(c *ch.C) {
+func (a *APISuite) TestWithInvalidGrid(c *ch.C) {
 	// Send request with invalid grid (not valid sudoku state)
-	var requestState State
+	var requestState state
 	requestState.Grid = sudoku.GridPerm()
 	// Invalidate in the off-chance it was actually valid
 	requestState.Grid[0][0] = requestState.Grid[0][sudoku.GridSize-1]
@@ -305,7 +305,7 @@ func (a *ApiSuite) TestWithInvalidGrid(c *ch.C) {
 
 // Verify that we can store a valid grid and return some solution data in the
 // response.
-func (a *ApiSuite) TestPostGrid(c *ch.C) {
+func (a *APISuite) TestPostGrid(c *ch.C) {
 	grid := sudoku.EmptyGrid()
 	// Add a few inputs
 	sudoku.RowPerm(grid[rand.Intn(sudoku.GridSize)])
@@ -325,7 +325,7 @@ func (a *ApiSuite) TestPostGrid(c *ch.C) {
 	testStore := &testDatastore{}
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(testStore).postGridHandler(w, r)
+	newSudokuAppEngineAPI(testStore).postGridHandler(w, r)
 
 	// Expecting the request grid to the equal to the stored grid
 	c.Assert(grid, ch.DeepEquals, testStore.grid)
@@ -333,7 +333,7 @@ func (a *ApiSuite) TestPostGrid(c *ch.C) {
 	// Expecting possible solutions in response
 	c.Assert(w.Code, ch.Equals, http.StatusOK)
 
-	var sols Solutions
+	var sols solutions
 	err = json.Unmarshal(w.Body.Bytes(), &sols)
 	// Response should be valid JSON
 	c.Assert(err, ch.IsNil)
@@ -345,7 +345,7 @@ func (a *ApiSuite) TestPostGrid(c *ch.C) {
 }
 
 // Verify that we can return solution data to given a valid grid state.
-func (a *ApiSuite) TestSolutionsHandler(c *ch.C) {
+func (a *APISuite) TestSolutionsHandler(c *ch.C) {
 	grid := sudoku.EmptyGrid()
 	// Add a few inputs
 	sudoku.RowPerm(grid[rand.Intn(sudoku.GridSize)])
@@ -361,12 +361,12 @@ func (a *ApiSuite) TestSolutionsHandler(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).solutionsHandler(w, r)
+	newSudokuAppEngineAPI(nil).solutionsHandler(w, r)
 
 	// Expecting possible solutions in response
 	c.Assert(w.Code, ch.Equals, http.StatusOK)
 
-	var sols Solutions
+	var sols solutions
 	err = json.Unmarshal(w.Body.Bytes(), &sols)
 	// Response should be valid JSON
 	c.Assert(err, ch.IsNil)
@@ -384,14 +384,14 @@ func (a *ApiSuite) TestSolutionsHandler(c *ch.C) {
 	for i := 0; i < sudoku.GridSize; i++ {
 		for j := 0; j < sudoku.GridSize; j++ {
 			if sols.Grid[i][j] == 0 {
-				c.Error("Empty cell at position %d,%d", i, j)
+				c.Errorf("Empty cell at position %d,%d", i, j)
 			}
 		}
 	}
 }
 
 // Verify that we can return an input hint for a given valid grid state.
-func (a *ApiSuite) TestSolutionsHintHandlerNoHint(c *ch.C) {
+func (a *APISuite) TestSolutionsHintHandlerNoHint(c *ch.C) {
 
 	// Get a full grid
 	grid := sudoku.EmptyGrid()
@@ -409,7 +409,7 @@ func (a *ApiSuite) TestSolutionsHintHandlerNoHint(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).solutionsHintHandler(w, r)
+	newSudokuAppEngineAPI(nil).solutionsHintHandler(w, r)
 
 	// Expecting possible solutions in response
 	c.Assert(w.Code, ch.Equals, http.StatusNoContent)
@@ -417,7 +417,7 @@ func (a *ApiSuite) TestSolutionsHintHandlerNoHint(c *ch.C) {
 
 // Verify that we can return a random valid grid with the specified number of
 // starting inputs.
-func (a *ApiSuite) TestRandomGridHandler(c *ch.C) {
+func (a *APISuite) TestRandomGridHandler(c *ch.C) {
 
 	startWith := rand.Intn(sudoku.GridSize * sudoku.GridSize)
 
@@ -428,12 +428,12 @@ func (a *ApiSuite) TestRandomGridHandler(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).randomGridHandler(w, r)
+	newSudokuAppEngineAPI(nil).randomGridHandler(w, r)
 
 	// Expecting data response
 	c.Assert(w.Code, ch.Equals, http.StatusOK)
 
-	var sols Solutions
+	var sols solutions
 	err = json.Unmarshal(w.Body.Bytes(), &sols)
 	// Response should be valid JSON
 	c.Assert(err, ch.IsNil)
@@ -456,7 +456,7 @@ func (a *ApiSuite) TestRandomGridHandler(c *ch.C) {
 
 // Verify that we the request is rejected if the starting inputs is not
 // requested.
-func (a *ApiSuite) TestRandomGridHandlerMissingParam(c *ch.C) {
+func (a *APISuite) TestRandomGridHandlerMissingParam(c *ch.C) {
 
 	r, err := a.inst.NewRequest("GET", "/randomgrid", nil)
 	if err != nil {
@@ -465,7 +465,7 @@ func (a *ApiSuite) TestRandomGridHandlerMissingParam(c *ch.C) {
 
 	w := httptest.NewRecorder()
 
-	NewSudokuAeApi(nil).randomGridHandler(w, r)
+	newSudokuAppEngineAPI(nil).randomGridHandler(w, r)
 
 	c.Assert(w.Code, ch.Equals, http.StatusBadRequest)
 }

@@ -10,7 +10,7 @@ import (
 func init() {
 
 	store := persistence.NewBinaryDatastoreGrid()
-	api := NewSudokuAeApi(store)
+	api := newSudokuAppEngineAPI(store)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", api.loginHandler).Methods("GET")

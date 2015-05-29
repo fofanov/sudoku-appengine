@@ -8,8 +8,10 @@ import (
 	"math/rand"
 )
 
-const fOUND_LIMIT = 10000
+const foundLimit = 10000
 
+// DataObject is the key data structure used by the Dancing Links implementation
+// to quickly search the problem space.
 type DataObject struct {
 	Left   *DataObject
 	Right  *DataObject
@@ -25,11 +27,17 @@ type DataObject struct {
 	Root *DataObject
 }
 
+// Row is a doubly linked list of DataObjects traversable by moving left or
+// right.
 type Row *DataObject
+
+// Column is a doubly linked list of DataObjects traversable by moving up or down.
 type Column *DataObject
+
+// Root is the entry point in to the Column row.
 type Root Column
 
-// Append an object to the column.
+// AppendToColumn appends a data object to the column.
 func AppendToColumn(column Column, data *DataObject) {
 	data.Down = column
 	data.Up = column.Up
@@ -41,7 +49,7 @@ func AppendToColumn(column Column, data *DataObject) {
 	}
 }
 
-// Append an object to the row.
+// AppendToRow appends a data object to the row.
 func AppendToRow(row Row, data *DataObject) {
 	data.Right = row
 	data.Left = row.Left
@@ -49,7 +57,7 @@ func AppendToRow(row Row, data *DataObject) {
 	data.Left.Right = data
 }
 
-// Insert a column into the list of headers.
+// InitialiseColumnHeader inserts a column into the list of headers.
 func InitialiseColumnHeader(header *DataObject, root Row, name string) {
 	AppendToColumn(header, header)
 	AppendToRow(root, header)
@@ -76,9 +84,8 @@ func minimalSelect(r Root) Column {
 	return column
 }
 
-// 'Cover' a column.
-// Hide it from the headers list and hide all row inputs that are in this
-// column.
+// Cover hides a column from the headers list and hide all row inputs that are
+// in this column.
 func Cover(c Column) {
 	c.Right.Left = c.Left
 	c.Left.Right = c.Right
@@ -91,8 +98,7 @@ func Cover(c Column) {
 	}
 }
 
-// 'Uncover' a column.
-// Reverse the covering, make possible by the doubly linked lists.
+// Uncover reverses a covering, make possible by the doubly linked lists.
 func Uncover(c Column) {
 	for i := c.Up; i != c; i = i.Up {
 		for j := i.Left; j != i; j = j.Left {
@@ -105,8 +111,8 @@ func Uncover(c Column) {
 	c.Left.Right = c
 }
 
-// Interface for storing state of a problem modelled using DLX.
-type DlxState interface {
+// State is the interface for storing a problem modelled using DLX.
+type State interface {
 	// Returns the number of solutions found in the search and a sample solution
 	// from the search (if one exists). Must return > 0 if
 	// a solution exists.
@@ -118,9 +124,9 @@ type DlxState interface {
 	StoreSolution(path []Row, output interface{})
 }
 
-// The DLX search algorithm. We have an additionally augmented the search by
-// keeping track of the number of solutions found so far.
-func SearchDlx(e DlxState, path []Row, foundSoFar uint32, output interface{}) uint32 {
+// SearchDLX performs the DLX search algorithm. We have an additionally
+// augmented the search by keeping track of the number of solutions found so far.
+func SearchDLX(e State, path []Row, foundSoFar uint32, output interface{}) uint32 {
 	if e.GetRoot().Right == e.GetRoot() {
 		if rand.Intn(int(foundSoFar+1)) == 0 {
 			if output != nil {
@@ -144,7 +150,7 @@ func SearchDlx(e DlxState, path []Row, foundSoFar uint32, output interface{}) ui
 		for j := r.Right; j != r; j = j.Right {
 			Cover(j.Column)
 		}
-		found += SearchDlx(e, path, found+foundSoFar, output)
+		found += SearchDLX(e, path, found+foundSoFar, output)
 		for j := r.Left; j != r; j = j.Left {
 			Uncover(j.Column)
 		}
@@ -152,7 +158,7 @@ func SearchDlx(e DlxState, path []Row, foundSoFar uint32, output interface{}) ui
 		path = path[:len(path)-1]
 		// Stop once we have found as many solutions as we want.
 		// TODO - Make this configurable in the search.
-		if found > fOUND_LIMIT {
+		if found > foundLimit {
 			break
 		}
 	}

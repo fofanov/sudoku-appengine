@@ -13,8 +13,9 @@ import (
 	"appengine/user"
 )
 
-const SUDOKU_GRID_ENTITY = "SudokuGrid"
+const sudokuGridEntity = "SudokuGrid"
 
+// DatastoreGrid is the interface for storing and loading a sudoku grid.
 type DatastoreGrid interface {
 	SaveGrid(c appengine.Context, g sudoku.Grid) error
 	LoadGrid(c appengine.Context) (sudoku.Grid, error)
@@ -22,6 +23,8 @@ type DatastoreGrid interface {
 
 type binaryDatastoreGrid struct{}
 
+// NewBinaryDatastoreGrid returns a datastore that saves to and loads from
+// sudoku grids in a binary encoding.
 func NewBinaryDatastoreGrid() DatastoreGrid {
 	return &binaryDatastoreGrid{}
 }
@@ -41,7 +44,7 @@ func (d *binaryDatastoreGrid) SaveGrid(c appengine.Context, g sudoku.Grid) error
 		return err
 	}
 
-	key := datastore.NewKey(c, SUDOKU_GRID_ENTITY, u.ID, 0, nil)
+	key := datastore.NewKey(c, sudokuGridEntity, u.ID, 0, nil)
 	if _, err = datastore.Put(c, key, &struct{ BS []byte }{BS: buf.Bytes()}); err != nil {
 		log.Println(err)
 		return err
@@ -58,7 +61,7 @@ func (d *binaryDatastoreGrid) LoadGrid(c appengine.Context) (sudoku.Grid, error)
 		return nil, errors.New("No user")
 	}
 
-	key := datastore.NewKey(c, SUDOKU_GRID_ENTITY, u.ID, 0, nil)
+	key := datastore.NewKey(c, sudokuGridEntity, u.ID, 0, nil)
 
 	bs := &struct{ BS []byte }{}
 	if err := datastore.Get(c, key, bs); err != nil {

@@ -15,31 +15,31 @@ const (
 	constraintTypes = 4
 	// Size of subgrid.
 	sqN = 3
-	// Number of values in the grid
+	// GridSize is the number of values in the grid
 	// Also the size of the grid.
 	GridSize = sqN * sqN
 )
 
-// All possible inputs into the grid.
+// Inputs represents all possible inputs into the Sudoku grid.
 type Inputs [GridSize][GridSize][GridSize][constraintTypes]dlx.DataObject
 
-// The sudoku grid. We use int8 as Go's JSON encoding confuses it for bytes.
-// Valid input values are [1..N]. 0 indicates no input.
+// Grid represents the sudoku grid. We use int8 as Go's JSON encoding confuses
+// it for bytes. Valid input values are [1..N]. 0 indicates no input.
 type Grid [][]int8
 
-type sudokuDlxState struct {
+type sudokuDLXState struct {
 	inputs *Inputs
 	root   dlx.Root
 }
 
-// An input into a Sudoku grid
+// Input represents a number at a position in the Sudoku grid
 type Input struct {
 	X uint8
 	Y uint8
 	N int8
 }
 
-// Create an empty grid. (0 denotes no input)
+// EmptyGrid creates an empty grid. (0 denotes no input)
 func EmptyGrid() Grid {
 	rows := make([][]int8, GridSize)
 	for i := range rows {
@@ -48,7 +48,7 @@ func EmptyGrid() Grid {
 	return rows
 }
 
-// Merge one grid into another.
+// MergeGrids Merges one grid into another.
 func MergeGrids(result Grid, partial Grid) {
 	for i := 0; i < len(result); i++ {
 		for j := 0; j < len(result[i]); j++ {
@@ -59,7 +59,7 @@ func MergeGrids(result Grid, partial Grid) {
 	}
 }
 
-// Drop inputs from a full grid until the required number remain.
+// GridDropUntil drop inputs from a full grid until the required number remain.
 func GridDropUntil(grid Grid, startingInputs int) {
 
 	// Randomly remove values
@@ -76,10 +76,10 @@ func GridDropUntil(grid Grid, startingInputs int) {
 	}
 }
 
-// Select a valid input from a given grid.
+// SelectRandomInput returns a valid input from a given grid.
 func SelectRandomInput(grid Grid) *Input {
 	c := 0
-	var m *Input = nil
+	var m *Input
 	for i := 0; i < GridSize; i++ {
 		for j := 0; j < GridSize; j++ {
 			if grid[i][j] != 0 {
@@ -97,7 +97,7 @@ func SelectRandomInput(grid Grid) *Input {
 	return m
 }
 
-// Check the grid is in a valid state.
+// ValidateGrid checks that the grid is in a valid state.
 func ValidateGrid(grid Grid) error {
 	if len(grid) != GridSize {
 		return errors.New("Grid does not have correct number of rows")
@@ -140,7 +140,7 @@ func ValidateGrid(grid Grid) error {
 	return nil
 }
 
-// Create a random row permutation.
+// RowPerm creates a random row permutation of a sudoku grid.
 func RowPerm(row []int8) {
 
 	for i := 0; i < len(row); i++ {
@@ -150,7 +150,7 @@ func RowPerm(row []int8) {
 	}
 }
 
-// Create a random (not necessarily valid Sudoku) grid.
+// GridPerm creates a random (not necessarily valid Sudoku) grid.
 func GridPerm() Grid {
 	grid := EmptyGrid()
 	for i := 0; i < len(grid); i++ {
@@ -162,7 +162,7 @@ func GridPerm() Grid {
 
 // Add an input to the Dlx state by covering the constraints the input
 // sastisfies.
-func addInput(s *sudokuDlxState, input *Input) {
+func addInput(s *sudokuDLXState, input *Input) {
 
 	//Find the corresponding row
 	r := &s.inputs[input.X][input.Y][input.N-1][0]
@@ -177,7 +177,7 @@ func addInput(s *sudokuDlxState, input *Input) {
 // Remove an input from the Dlx state by uncovering the constraints the input
 // sastisfies.
 // TODO - Remove dead code
-func removeInput(s *sudokuDlxState, input *Input) {
+func removeInput(s *sudokuDLXState, input *Input) {
 	//Find the corresponding row
 	r := &s.inputs[input.X][input.Y][input.N-1][0]
 
@@ -190,15 +190,15 @@ func removeInput(s *sudokuDlxState, input *Input) {
 }
 
 // Search for solutions to the current state of the grid.
-func (s *sudokuDlxState) Search() (uint32, interface{}) {
+func (s *sudokuDLXState) Search() (uint32, interface{}) {
 
 	solutionGrid := EmptyGrid()
-	sols := dlx.SearchDlx(s, make([]dlx.Row, 0), 0, solutionGrid)
+	sols := dlx.SearchDLX(s, make([]dlx.Row, 0), 0, solutionGrid)
 	return sols, solutionGrid
 }
 
 // Store a winning grid found in the search.
-func (s *sudokuDlxState) StoreSolution(path []dlx.Row, output interface{}) {
+func (s *sudokuDLXState) StoreSolution(path []dlx.Row, output interface{}) {
 
 	grid := output.(Grid)
 	//TODO Should we assume this type assertion is correct?
@@ -211,12 +211,12 @@ func (s *sudokuDlxState) StoreSolution(path []dlx.Row, output interface{}) {
 	}
 }
 
-func (s *sudokuDlxState) GetRoot() dlx.Root {
+func (s *sudokuDLXState) GetRoot() dlx.Root {
 	return s.root
 }
 
 // Formalise a sudoku state into an exact cover problem solvable by DLX.
-func InitialiseSudokuDlxState() *sudokuDlxState {
+func initialiseSudokuDLXState() *sudokuDLXState {
 
 	root := &dlx.DataObject{}
 	dlx.InitialiseColumnHeader(root, root, "root")
@@ -292,16 +292,16 @@ func InitialiseSudokuDlxState() *sudokuDlxState {
 		}
 	}
 
-	return &sudokuDlxState{
+	return &sudokuDLXState{
 		root:   root,
 		inputs: &rows,
 	}
 }
 
-// Set up a Dlx state for a sudoku grid, priming the state with any initial grid
-// inputs.
-func NewSudokuState(grid Grid) dlx.DlxState {
-	ss := InitialiseSudokuDlxState()
+// NewSudokuState sets up a Dlx state for a sudoku grid, priming the state with
+// any initial grid inputs.
+func NewSudokuState(grid Grid) dlx.State {
+	ss := initialiseSudokuDLXState()
 
 	for i := 0; i < len(grid); i++ {
 		for j := 0; j < len(grid[i]); j++ {
